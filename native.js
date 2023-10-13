@@ -1,16 +1,12 @@
-'use strict';
-
-const workers_count  = process.argv[2]*1 || 1;
-const parallel       = process.argv[3]*1 || 1;
-const payload_size   = process.argv[4]*1 || 256;
-const messages_count = 20000;
-
 import child_process from 'node:child_process';
 import * as url from 'node:url';
 import crypto from 'node:crypto';
-import {getCpuUsage} from './utils.js';
+
+import { getCpuUsage, argv } from './utils.js';
 
 const __filename = url.fileURLToPath(import.meta.url);
+
+const { workers_count, parallel, payload_size, messages_count } = argv();
 
 let payload;
 

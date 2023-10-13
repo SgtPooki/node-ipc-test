@@ -1,14 +1,16 @@
-'use strict';
+import child_process from 'node:child_process';
+import * as url from 'node:url';
+import crypto from 'node:crypto';
+import redis from 'redis';
 
-const workers_count  = process.argv[2]*1 || 1;
-const parallel       = process.argv[3]*1 || 1;
-const payload_size   = process.argv[4]*1 || 256;
-const messages_count = 20000;
+import { getCpuUsage, argv } from './utils.js';
+
+const __filename = url.fileURLToPath(import.meta.url);
+
+const { workers_count, parallel, payload_size, messages_count } = argv();
+
 const redis_unix_path = '/tmp/redis.sock'; // null to default tcp localhost
 
-const child_process = require('child_process');
-const fs = require('fs');
-const redis = require('redis');
 let payload;
 
 if (process.send) {
@@ -16,7 +18,7 @@ if (process.send) {
   workerRun();
 } else {
   // master
-  payload = require('crypto').randomBytes(payload_size/2).toString('hex');
+  payload = crypto.randomBytes(payload_size/2).toString('hex');
   let master_cpu_usage = getCpuUsage(), time = Date.now();
   let workers = Array.from(Array(workers_count), () => child_process.fork(__filename));
   let promises = [];
@@ -38,13 +40,6 @@ if (process.send) {
     console.log(`result: ${(1000*speed).toFixed()} msg/s`);
     process.exit();
   });
-}
-
-function getCpuUsage() {
-  let stat = fs.readFileSync(`/proc/${process.pid}/stat`).toString().split(' ');
-  let utime = parseInt(stat[13]); // in ticks, tick = 1/10000 s
-  let stime = parseInt(stat[14]);
-  return (utime + stime) * 10; // to ms
 }
 
 function masterRun(worker) {
